@@ -76,6 +76,9 @@ def save_checkpoint(model, opt, scaler, step, args, hub_repo=None):
     model.save(tmp, extra={"step": step})
     torch.save({"optimizer": opt.state_dict(), "scaler": scaler.state_dict(), "step": step,
                 "args": vars(args), "rng": np.random.get_state()}, tmp / "trainer_state.pt")
+    log = ROOT / "results" / "pretrain_log.csv"
+    if log.exists():  # travel with the checkpoint so a resumed session keeps the full loss curve
+        shutil.copy(log, tmp / "pretrain_log.csv")
     if final.exists():
         shutil.rmtree(final)
     tmp.rename(final)
@@ -129,6 +132,12 @@ def main():
         model = Transformer.load(CKPT / "last", device)
         state = torch.load(CKPT / "last" / "trainer_state.pt", map_location=device, weights_only=False)
         start = state["step"]
+        saved_log = CKPT / "last" / "pretrain_log.csv"
+        if saved_log.exists():  # restore log, dropping rows logged after the checkpoint
+            (ROOT / "results").mkdir(exist_ok=True)
+            lines = saved_log.read_text().splitlines()
+            keep = [lines[0]] + [l for l in lines[1:] if int(l.split(",")[0]) <= start]
+            (ROOT / "results" / "pretrain_log.csv").write_text("\n".join(keep) + "\n")
         print(f"resumed from step {start}")
     else:
         from tokenizer import BPETokenizer
