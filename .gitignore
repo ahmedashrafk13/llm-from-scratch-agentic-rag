@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+checkpoints/
+data/processed/*.bin
+data/processed/tinystories*.jsonl
+data/processed/fineweb.jsonl
+.pytest_cache/
+*.log
