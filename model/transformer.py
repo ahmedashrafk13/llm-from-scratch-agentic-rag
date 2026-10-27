@@ -68,12 +68,12 @@ class Transformer(nn.Module):
         logits = self.lm_head(self.norm(x))
         if targets is None:
             return logits, None
-        loss = F.cross_entropy(logits.float().view(-1, logits.size(-1)), targets.view(-1),
+        loss = F.cross_entropy(logits.float().reshape(-1, logits.size(-1)), targets.reshape(-1),
                                ignore_index=-100, reduction="none")
         if loss_mask is not None:
-            m = loss_mask.view(-1).float()
+            m = loss_mask.reshape(-1).float()
             return logits, (loss * m).sum() / m.sum().clamp(min=1)
-        valid = (targets.view(-1) != -100).float()
+        valid = (targets.reshape(-1) != -100).float()
         return logits, (loss * valid).sum() / valid.sum().clamp(min=1)
 
     @torch.no_grad()
