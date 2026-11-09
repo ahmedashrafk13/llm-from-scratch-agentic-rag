@@ -30,7 +30,7 @@ import torch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from evaluation.metrics import contains_answer, exact_match, normalize, token_f1  # noqa: E402
-from evaluation.rag_metrics import RagJudge  # noqa: E402
+from evaluation.rag_metrics import JUDGE_VERSION, RagJudge  # noqa: E402
 from evaluation.store import mirror  # noqa: E402
 from rag.agent import ABSTAIN, RAGAgent  # noqa: E402
 from rag.generators import QwenGenerator, ScratchGenerator  # noqa: E402
@@ -145,6 +145,16 @@ def main():
     # config -> [group, key] of the experiment that measured it. Decoding is greedy, so identical
     # configurations (e.g. "RAG + FT" and "top-k=3") give identical answers: measure once, reuse.
     index = results.setdefault("_index", {})
+    if results.get("_judge_version") != JUDGE_VERSION:  # judge changed: redo judged experiments only
+        stale = [(g, k) for g, rows in results.items() if not g.startswith("_") for k, m in rows.items()
+                 if "faithfulness" in m or "hallucination_rate" in m]
+        for g, k in stale:
+            del results[g][k]
+        for cfg in [c for c, gk in index.items() if tuple(gk) in stale]:
+            del index[cfg]
+        if stale:
+            print(f"judge v{results.get('_judge_version', 1)} -> v{JUDGE_VERSION}: recomputing {len(stale)} judged results")
+    results["_judge_version"] = JUDGE_VERSION
     samples = open(SAMPLES, "a", encoding="utf-8")
 
     def save():
