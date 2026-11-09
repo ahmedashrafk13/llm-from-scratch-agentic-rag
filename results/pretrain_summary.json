@@ -1,0 +1,11 @@
+{
+  "params_M": 37.43,
+  "steps": 12000,
+  "tokens": 196608000,
+  "val_loss_tinystories": 1.516,
+  "val_loss_fineweb": 4.1283,
+  "val_ppl_tinystories": 4.55,
+  "val_ppl_fineweb": 62.07,
+  "train_tok_per_s_T4": 26728,
+  "attention_kernel_eval_gpu": "memory-efficient (sm<80: FlashAttention-2 unsupported)"
+}

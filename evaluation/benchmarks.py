@@ -5,7 +5,7 @@ of its token log-probabilities. We report
   acc       - argmax of summed log-prob
   acc_norm  - argmax of log-prob / option length in bytes (removes the length bias)
 on a fixed, seeded subset of each benchmark (n per task, default 500), so all
-models see exactly the same items.
+models see exactly the same items. Resumable: finished (model, task) pairs are skipped.
 
 Models: from-scratch base / SFT / DPO, GPT-2 (124M) baseline, and Qwen2.5-1.5B
 (4-bit, base and QLoRA) as an upper reference.
@@ -25,6 +25,7 @@ from datasets import load_dataset
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+from evaluation.store import mirror  # noqa: E402
 
 CHANCE = {"mmlu": 0.25, "arc_easy": 0.25, "arc_challenge": 0.25, "hellaswag": 0.25}
 
@@ -132,22 +133,35 @@ def main():
     ap.add_argument("--n", type=int, default=500)
     ap.add_argument("--models", nargs="*", default=list(MODELS))
     ap.add_argument("--tasks", nargs="*", default=list(CHANCE))
+    ap.add_argument("--fresh", action="store_true", help="recompute (model, task) pairs already in the results")
     args = ap.parse_args()
     out_path = ROOT / "results" / "benchmarks.json"
     results = json.loads(out_path.read_text()) if out_path.exists() else {}
-    tasks = {t: load_task(t, args.n) for t in args.tasks}
+    loaded: dict = {}
+
+    def items(t):  # datasets are only downloaded if some model still needs that task
+        if t not in loaded:
+            loaded[t] = load_task(t, args.n)
+        return loaded[t]
+
     for name in args.models:
+        todo = [t for t in args.tasks if args.fresh or results.get(name, {}).get(t, {}).get("n") != args.n]
+        if not todo:
+            print(f"[skip] {name} (done)", flush=True)
+            continue
         kind, path = MODELS[name]
         scorer = Scorer(kind, str(path) if path else None)
         results.setdefault(name, {})
-        for t, items in tasks.items():
-            results[name][t] = evaluate(scorer, items)
+        for t in todo:
+            results[name][t] = evaluate(scorer, items(t))
             print(name, t, results[name][t], flush=True)
             out_path.write_text(json.dumps(results, indent=2))
+            mirror(out_path)
         del scorer
         torch.cuda.empty_cache()
     results["_chance"] = CHANCE
     out_path.write_text(json.dumps(results, indent=2))
+    mirror(out_path)
 
 
 if __name__ == "__main__":

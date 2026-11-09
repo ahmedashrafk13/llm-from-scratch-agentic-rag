@@ -1,0 +1,14 @@
+[
+  {
+    "epoch": 0,
+    "val_pairwise_acc": 0.52
+  },
+  {
+    "epoch": 1,
+    "val_pairwise_acc": 0.8466666666666667
+  },
+  {
+    "epoch": 2,
+    "val_pairwise_acc": 0.8733333333333333
+  }
+]

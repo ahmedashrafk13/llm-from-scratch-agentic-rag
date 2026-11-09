@@ -11,6 +11,7 @@ faiss-cpu
 rank_bm25
 regex
 numpy==1.26.4
+pyarrow==18.1.0  # pyarrow>=21 needs NumPy 2
 pandas
 matplotlib
 tqdm

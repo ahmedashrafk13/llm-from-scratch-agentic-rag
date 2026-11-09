@@ -1,0 +1,23 @@
+{
+  "sft_val_loss": {
+    "base": 3.6794,
+    "sft": 3.3061,
+    "dpo": 3.4405
+  },
+  "dpo_heldout_pairs": {
+    "sft (reference, epoch 0)": {
+      "dpo_val_loss": 0.6931,
+      "reward_acc": 0.5,
+      "margin": 0.0,
+      "n_pairs": 150
+    },
+    "dpo (final)": {
+      "dpo_val_loss": 0.2799,
+      "reward_acc": 0.8991,
+      "margin": 2.3019,
+      "n_pairs": 150
+    }
+  },
+  "n_pairs_total": 1281,
+  "on_policy_rejected": 974
+}

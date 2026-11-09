@@ -12,6 +12,8 @@ Ablations
   A. retriever mode   dense / BM25 / hybrid(RRF)      x reranker off / on
   B. chunk size       64 / 128 / 256 words            x overlap 0 / 32
   C. embedding model  BGE-small vs E5-small (dense only)
+
+Resumable: each finished configuration is saved and skipped on the next run (--fresh recomputes).
 """
 from __future__ import annotations
 
@@ -25,6 +27,7 @@ import datasets  # noqa: F401
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from evaluation.metrics import normalize, recall_at_k, reciprocal_rank  # noqa: E402
+from evaluation.store import mirror  # noqa: E402
 from rag.retriever import Retriever, chunk_corpus, load_passages  # noqa: E402
 from training.chat_format import read_jsonl  # noqa: E402
 
@@ -57,29 +60,45 @@ def score(retr: Retriever, qs, mode: str, rerank: bool) -> dict:
 def main():
     qs = queries()
     passages = load_passages()
-    out = {"A_mode_x_rerank": {}, "B_chunking": {}, "C_embedder": {}}
+    path = ROOT / "results" / "retrieval_ablation.json"
+    out = json.loads(path.read_text()) if path.exists() and "--fresh" not in sys.argv else {}
+    for sec in ("A_mode_x_rerank", "B_chunking", "C_embedder"):
+        out.setdefault(sec, {})
+    cache: dict = {}
 
-    base = Retriever(chunk_corpus(passages, 128, 32))
+    def retriever(size=128, ov=32, embedder="bge-small"):
+        if (size, ov, embedder) not in cache:
+            cache[(size, ov, embedder)] = Retriever(chunk_corpus(passages, size, ov), embedder=embedder)
+        return cache[(size, ov, embedder)]
+
+    def run(sec, key, fn):  # resumable: each finished config is saved and skipped next time
+        if key in out[sec]:
+            print(f"[skip] {sec} / {key} (done)", flush=True)
+            return
+        out[sec][key] = fn()
+        print(key, out[sec][key], flush=True)
+        path.write_text(json.dumps(out, indent=2))
+        mirror(path)
+
     for mode in ("dense", "sparse", "hybrid"):
         for rr in (False, True):
-            key = f"{mode}{'+rerank' if rr else ''}"
-            out["A_mode_x_rerank"][key] = score(base, qs, mode, rr)
-            print(key, out["A_mode_x_rerank"][key], flush=True)
+            run("A_mode_x_rerank", f"{mode}{'+rerank' if rr else ''}",
+                lambda mode=mode, rr=rr: score(retriever(), qs, mode, rr))
 
     for size in (64, 128, 256):
         for ov in (0, 32):
-            chunks = chunk_corpus(passages, size, ov)
-            r = base if (size, ov) == (128, 32) else Retriever(chunks)
-            key = f"size{size}_overlap{ov}"
-            out["B_chunking"][key] = {**score(r, qs, "hybrid", True), "n_chunks": len(chunks),
-                                      "mean_words": round(sum(len(c.text.split()) for c in chunks) / len(chunks), 1)}
-            print(key, out["B_chunking"][key], flush=True)
+            def chunking(size=size, ov=ov):
+                r = retriever(size, ov)
+                return {**score(r, qs, "hybrid", True), "n_chunks": len(r.chunks),
+                        "mean_words": round(sum(len(c.text.split()) for c in r.chunks) / len(r.chunks), 1)}
+            run("B_chunking", f"size{size}_overlap{ov}", chunking)
+            if (size, ov) != (128, 32):  # keep the default index; drop the others to save memory
+                cache.pop((size, ov, "bge-small"), None)
 
-    out["C_embedder"]["bge-small"] = score(base, qs, "dense", False)
-    e5 = Retriever(chunk_corpus(passages, 128, 32), embedder="e5-small")
-    out["C_embedder"]["e5-small"] = score(e5, qs, "dense", False)
-    print(out["C_embedder"])
-    (ROOT / "results" / "retrieval_ablation.json").write_text(json.dumps(out, indent=2))
+    run("C_embedder", "bge-small", lambda: score(retriever(), qs, "dense", False))
+    run("C_embedder", "e5-small", lambda: score(retriever(embedder="e5-small"), qs, "dense", False))
+    path.write_text(json.dumps(out, indent=2))
+    mirror(path)
 
 
 if __name__ == "__main__":

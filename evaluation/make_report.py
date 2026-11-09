@@ -86,6 +86,8 @@ def main():
             md += [f"## Retrieval: {title}", md_table([{"config": k, **v} for k, v in r[sec].items()], "config")]
     if q := load("qa_experiments.json"):
         for g, rows in sorted(q.items()):
+            if g.startswith("_"):  # bookkeeping (_n, _index)
+                continue
             md += [f"## QA: {g}", md_table([{"system": k, **v} for k, v in rows.items()], "system")]
     for name, title in (("sft_history.json", "SFT"), ("dpo_history.json", "DPO"), ("reward_model.json", "Reward model")):
         if h := load(name):

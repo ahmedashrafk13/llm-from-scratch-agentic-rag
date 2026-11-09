@@ -8,6 +8,10 @@ Experiments (all on the same seeded sample of held-out questions):
   5. hallucination       hand-built set: answerable + unanswerable questions
 
 Answer metrics: EM, token-F1, contains-gold. RAG runs add RAGAS-style metrics.
+
+Resumable: results are saved after every experiment and finished ones are skipped on the
+next run (use --fresh to recompute). Set RESULTS_MIRROR=<dir> to also copy them there
+after each experiment (the Colab notebook points it at Google Drive).
 """
 from __future__ import annotations
 
@@ -27,6 +31,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from evaluation.metrics import contains_answer, exact_match, normalize, token_f1  # noqa: E402
 from evaluation.rag_metrics import RagJudge  # noqa: E402
+from evaluation.store import mirror  # noqa: E402
 from rag.agent import ABSTAIN, RAGAgent  # noqa: E402
 from rag.generators import QwenGenerator, ScratchGenerator  # noqa: E402
 from rag.retriever import Retriever, chunk_corpus, load_passages  # noqa: E402
@@ -104,82 +109,123 @@ def hallucination(agent_or_gen, testset, judge: RagJudge, use_rag: bool) -> dict
             "n_unanswerable": len(un), "n_answerable": len(ans)}, rows
 
 
-def free(*objs):
-    for o in objs:
-        del o
-    gc.collect()
-    torch.cuda.empty_cache()
+class Lazy:
+    """Build an expensive object (model, index) only when an experiment actually needs it."""
+
+    def __init__(self, factory):
+        self.factory, self.obj = factory, None
+
+    def get(self):
+        if self.obj is None:
+            self.obj = self.factory()
+        return self.obj
+
+    def free(self):
+        self.obj = None
+        gc.collect()
+        torch.cuda.empty_cache()
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--n", type=int, default=200)
     ap.add_argument("--only", nargs="*", default=None, help="subset of experiment groups to (re)run")
+    ap.add_argument("--judge-device", default="cuda", help="'cpu' frees ~1 GB of VRAM on 4 GB cards")
+    ap.add_argument("--fresh", action="store_true", help="ignore saved results and recompute everything")
     args = ap.parse_args()
     random.seed(0)
     qs = read_jsonl(ROOT / "data" / "processed" / "domain_eval.jsonl")
     random.Random(0).shuffle(qs)
     qs = qs[:args.n]
     hset = read_jsonl(ROOT / "evaluation" / "hallucination_testset.jsonl")
-    results = json.loads(OUT.read_text()) if OUT.exists() else {}
+    results = {} if args.fresh or not OUT.exists() else json.loads(OUT.read_text())
+    if results.get("_n", args.n) != args.n:
+        raise SystemExit(f"{OUT.name} holds n={results['_n']} results; pass --n {results['_n']} or --fresh")
+    results["_n"] = args.n
+    # config -> [group, key] of the experiment that measured it. Decoding is greedy, so identical
+    # configurations (e.g. "RAG + FT" and "top-k=3") give identical answers: measure once, reuse.
+    index = results.setdefault("_index", {})
     samples = open(SAMPLES, "a", encoding="utf-8")
 
-    def record(group, key, metrics, rows):
+    def save():
+        OUT.write_text(json.dumps(results, indent=2))
+        mirror(OUT, SAMPLES)
+
+    def run(group, key, cfg, fn):
+        if args.only is not None and group not in args.only:
+            return
+        if key in results.get(group, {}):
+            print(f"[skip] {group} / {key} (done)", flush=True)
+            return
+        if cfg in index:
+            g0, k0 = index[cfg]
+            metrics, rows = results[g0][k0], []
+            print(f"[reuse] {group} / {key} == {g0} / {k0}", flush=True)
+        else:
+            metrics, rows = fn()
+            index[cfg] = [group, key]
         results.setdefault(group, {})[key] = metrics
         print(group, key, metrics, flush=True)
-        OUT.write_text(json.dumps(results, indent=2))
         for r in rows[:15]:
             samples.write(json.dumps({"group": group, "system": key, **r}) + "\n")
         samples.flush()
+        save()
 
-    want = lambda g: args.only is None or g in args.only  # noqa: E731
-    judge = RagJudge()
-    retr = Retriever(chunk_corpus(load_passages(), 128, 32))
+    judge = Lazy(lambda: RagJudge(device=args.judge_device))
+    retr = Lazy(lambda: Retriever(chunk_corpus(load_passages(), 128, 32)))
 
-    if want("1_alignment_stages"):
-        for ck in ("base", "sft", "dpo"):
-            g = ScratchGenerator(ck)
-            record("1_alignment_stages", f"scratch-{ck} closed-book", *closed_book(g, qs))
-            record("1_alignment_stages", f"scratch-{ck} + RAG", *with_rag(RAGAgent(retr, g), qs, judge))
-            free(g)
+    def rag_cfg(name, k=3, rerank=True, self_correct=True):
+        ctx = 150 if name.startswith("scratch") else 400  # RAGAgent's default context budget
+        return f"rag|{name}|k={k}|rerank={rerank}|selfcorrect={self_correct}|hybrid|ctx={ctx}"
 
-    need_qwen = any(want(g) for g in ("2_scale", "3_rag_vs_finetune", "4_agent_ablations", "5_hallucination"))
-    if need_qwen:
-        base = QwenGenerator(adapter=None)
-        if want("3_rag_vs_finetune"):
-            record("3_rag_vs_finetune", "base (no RAG, no FT)", *closed_book(base, qs))
-            record("3_rag_vs_finetune", "RAG only (base + RAG)", *with_rag(RAGAgent(retr, base), qs, judge))
-        if want("5_hallucination"):
-            m, rows = hallucination(base, hset, judge, use_rag=False)
-            record("5_hallucination", "qwen base, no RAG", m, rows)
-            m, rows = hallucination(RAGAgent(retr, base), hset, judge, use_rag=True)
-            record("5_hallucination", "qwen base + agentic RAG", m, rows)
-        free(base)
-        ft = QwenGenerator(adapter="qlora")
-        if want("3_rag_vs_finetune"):
-            record("3_rag_vs_finetune", "FT only (QLoRA, no RAG)", *closed_book(ft, qs))
-            record("3_rag_vs_finetune", "RAG + FT (QLoRA + RAG)", *with_rag(RAGAgent(retr, ft), qs, judge))
-        if want("2_scale"):
-            sc = ScratchGenerator("dpo")
-            for name, g in (("scratch-dpo 37M", sc), ("qwen-qlora 1.5B", ft)):
-                record("2_scale", f"{name} closed-book", *closed_book(g, qs))
-                record("2_scale", f"{name} + RAG", *with_rag(RAGAgent(retr, g), qs, judge))
-            free(sc)
-        if want("4_agent_ablations"):
-            for k in (1, 3, 5):
-                record("4_agent_ablations", f"top-k={k}", *with_rag(RAGAgent(retr, ft, k=k), qs, judge))
-            record("4_agent_ablations", "top-k=3, no reranker",
-                   *with_rag(RAGAgent(retr, ft, k=3, rerank=False), qs, judge))
-            record("4_agent_ablations", "top-k=3, no self-correction",
-                   *with_rag(RAGAgent(retr, ft, k=3, self_correct=False), qs, judge))
-        if want("5_hallucination"):
-            m, rows = hallucination(ft, hset, judge, use_rag=False)
-            record("5_hallucination", "qwen QLoRA, no RAG", m, rows)
-            m, rows = hallucination(RAGAgent(retr, ft), hset, judge, use_rag=True)
-            record("5_hallucination", "qwen QLoRA + agentic RAG", m, rows)
-            m, rows = hallucination(RAGAgent(retr, ft, self_correct=False), hset, judge, use_rag=True)
-            record("5_hallucination", "qwen QLoRA + RAG, no self-correction", m, rows)
+    def rag(gen, **kw):
+        return lambda: with_rag(RAGAgent(retr.get(), gen.get(), **kw), qs, judge.get())
+
+    def closed(gen):
+        return lambda: closed_book(gen.get(), qs)
+
+    def hall(gen, use_rag, **kw):
+        def f():
+            target = RAGAgent(retr.get(), gen.get(), **kw) if use_rag else gen.get()
+            return hallucination(target, hset, judge.get(), use_rag=use_rag)
+        return f
+
+    G1 = "1_alignment_stages"
+    for ck in ("base", "sft", "dpo"):
+        g = Lazy(lambda ck=ck: ScratchGenerator(ck))
+        run(G1, f"scratch-{ck} closed-book", f"closed|scratch-{ck}", closed(g))
+        run(G1, f"scratch-{ck} + RAG", rag_cfg(f"scratch-{ck}"), rag(g))
+        g.free()
+
+    base = Lazy(lambda: QwenGenerator(adapter=None))
+    QB = "qwen1.5b-base"
+    run("3_rag_vs_finetune", "base (no RAG, no FT)", f"closed|{QB}", closed(base))
+    run("3_rag_vs_finetune", "RAG only (base + RAG)", rag_cfg(QB), rag(base))
+    run("5_hallucination", "qwen base, no RAG", f"hall|{QB}|norag", hall(base, False))
+    run("5_hallucination", "qwen base + agentic RAG", f"hall|{rag_cfg(QB)}", hall(base, True))
+    base.free()
+
+    ft = Lazy(lambda: QwenGenerator(adapter="qlora"))
+    QF = "qwen1.5b-qlora"
+    run("3_rag_vs_finetune", "FT only (QLoRA, no RAG)", f"closed|{QF}", closed(ft))
+    run("3_rag_vs_finetune", "RAG + FT (QLoRA + RAG)", rag_cfg(QF), rag(ft))
+    sc = Lazy(lambda: ScratchGenerator("dpo"))
+    for name, g, gname in (("scratch-dpo 37M", sc, "scratch-dpo"), ("qwen-qlora 1.5B", ft, QF)):
+        run("2_scale", f"{name} closed-book", f"closed|{gname}", closed(g))
+        run("2_scale", f"{name} + RAG", rag_cfg(gname), rag(g))
+    sc.free()
+    for k in (1, 3, 5):
+        run("4_agent_ablations", f"top-k={k}", rag_cfg(QF, k=k), rag(ft, k=k))
+    run("4_agent_ablations", "top-k=3, no reranker", rag_cfg(QF, rerank=False), rag(ft, k=3, rerank=False))
+    run("4_agent_ablations", "top-k=3, no self-correction", rag_cfg(QF, self_correct=False),
+        rag(ft, k=3, self_correct=False))
+    run("5_hallucination", "qwen QLoRA, no RAG", f"hall|{QF}|norag", hall(ft, False))
+    run("5_hallucination", "qwen QLoRA + agentic RAG", f"hall|{rag_cfg(QF)}", hall(ft, True))
+    run("5_hallucination", "qwen QLoRA + RAG, no self-correction", f"hall|{rag_cfg(QF, self_correct=False)}",
+        hall(ft, True, self_correct=False))
+    ft.free()
     samples.close()
+    print("all QA experiments done", flush=True)
 
 
 if __name__ == "__main__":

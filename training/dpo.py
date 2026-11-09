@@ -47,11 +47,13 @@ def build_pairs(model, tok, device, n_general: int = 600) -> list[dict]:
     pairs, on_policy = [], 0
     for r in domain + general:
         gen = greedy(model, tok, r["prompt"], device)
-        if gen and token_f1(gen, r["response"]) < 0.5:
+        is_on = bool(gen) and token_f1(gen, r["response"]) < 0.5
+        if is_on:
             rejected, on_policy = gen, on_policy + 1
         else:
             rejected = random.choice([a for a in pool if a != r["response"]])
-        pairs.append({"prompt": r["prompt"], "chosen": r["response"], "rejected": rejected, "source": r["source"]})
+        pairs.append({"prompt": r["prompt"], "chosen": r["response"], "rejected": rejected, "source": r["source"],
+                      "on_policy": is_on})
     print(f"{len(pairs)} pairs, {on_policy} with on-policy rejected answers")
     with open(PAIRS, "w", encoding="utf-8") as f:
         for p in pairs:

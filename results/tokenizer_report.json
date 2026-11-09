@@ -1,0 +1,91 @@
+{
+  "vocab_size": 8192,
+  "train_seconds": 460.9,
+  "train_docs": 48000,
+  "heldout": {
+    "tinystories": {
+      "ours_bytes_per_token": 4.167,
+      "gpt2_bytes_per_token": 3.994,
+      "ours_roundtrip_exact": true
+    },
+    "fineweb": {
+      "ours_bytes_per_token": 3.713,
+      "gpt2_bytes_per_token": 4.492,
+      "ours_roundtrip_exact": true
+    }
+  },
+  "example": {
+    "text": "Once upon a time, Lily found a shiny red ball. The GDP grew 3.4% in 2023!",
+    "ours": [
+      "Once",
+      " upon",
+      " a",
+      " time",
+      ",",
+      " Lily",
+      " found",
+      " a",
+      " shiny",
+      " red",
+      " ball",
+      ".",
+      " The",
+      " G",
+      "D",
+      "P",
+      " grew",
+      " ",
+      "3",
+      ".",
+      "4",
+      "%",
+      " in",
+      " ",
+      "202",
+      "3",
+      "!"
+    ],
+    "gpt2": [
+      "Once",
+      "\u0120upon",
+      "\u0120a",
+      "\u0120time",
+      ",",
+      "\u0120Lily",
+      "\u0120found",
+      "\u0120a",
+      "\u0120shiny",
+      "\u0120red",
+      "\u0120ball",
+      ".",
+      "\u0120The",
+      "\u0120GDP",
+      "\u0120grew",
+      "\u01203",
+      ".",
+      "4",
+      "%",
+      "\u0120in",
+      "\u012020",
+      "23",
+      "!"
+    ]
+  },
+  "longest_tokens": [
+    " administration",
+    " responsibility",
+    " infrastructure",
+    " international",
+    " understanding",
+    " International",
+    " opportunities",
+    " uncomfortable",
+    " compassionate",
+    " organizations",
+    " professionals",
+    " communication",
+    " environmental",
+    " relationships",
+    " Unfortunately"
+  ]
+}

@@ -7,3 +7,5 @@ data/processed/tinystories*.jsonl
 data/processed/fineweb.jsonl
 .pytest_cache/
 *.log
+data/processed/
+results/_*.log

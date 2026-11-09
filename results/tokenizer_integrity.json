@@ -1,0 +1,12 @@
+{
+  "tinystories": {
+    "logged": 1.5073,
+    "recomputed": 1.5073,
+    "abs_diff": 0.0
+  },
+  "fineweb": {
+    "logged": 4.1374,
+    "recomputed": 4.1374,
+    "abs_diff": 0.0
+  }
+}
