@@ -1,0 +1,105 @@
+{
+  "A_mode_x_rerank": {
+    "dense": {
+      "recall@1": 0.4127,
+      "recall@3": 0.5397,
+      "recall@5": 0.6032,
+      "recall@10": 0.6389,
+      "mrr@10": 0.4888,
+      "ms_per_query": 15.9,
+      "n_queries": 252
+    },
+    "dense+rerank": {
+      "recall@1": 0.3452,
+      "recall@3": 0.4921,
+      "recall@5": 0.5595,
+      "recall@10": 0.6151,
+      "mrr@10": 0.4335,
+      "ms_per_query": 1280.5,
+      "n_queries": 252
+    },
+    "sparse": {
+      "recall@1": 0.5079,
+      "recall@3": 0.5873,
+      "recall@5": 0.6151,
+      "recall@10": 0.6706,
+      "mrr@10": 0.5556,
+      "ms_per_query": 7.1,
+      "n_queries": 252
+    },
+    "sparse+rerank": {
+      "recall@1": 0.4683,
+      "recall@3": 0.5913,
+      "recall@5": 0.6468,
+      "recall@10": 0.7063,
+      "mrr@10": 0.5431,
+      "ms_per_query": 1234.8,
+      "n_queries": 252
+    },
+    "hybrid": {
+      "recall@1": 0.4841,
+      "recall@3": 0.5992,
+      "recall@5": 0.6349,
+      "recall@10": 0.6786,
+      "mrr@10": 0.5503,
+      "ms_per_query": 21.0,
+      "n_queries": 252
+    },
+    "hybrid+rerank": {
+      "recall@1": 0.3929,
+      "recall@3": 0.5595,
+      "recall@5": 0.6151,
+      "recall@10": 0.6825,
+      "mrr@10": 0.4879,
+      "ms_per_query": 1259.2,
+      "n_queries": 252
+    }
+  },
+  "B_chunking": {
+    "size64_overlap0": {
+      "recall@1": 0.3651,
+      "recall@3": 0.5,
+      "recall@5": 0.5476,
+      "recall@10": 0.6349,
+      "mrr@10": 0.4466,
+      "ms_per_query": 690.6,
+      "n_queries": 252,
+      "n_chunks": 3085,
+      "mean_words": 64.0
+    },
+    "size64_overlap32": {
+      "recall@1": 0.3929,
+      "recall@3": 0.5357,
+      "recall@5": 0.6111,
+      "recall@10": 0.6667,
+      "mrr@10": 0.4822,
+      "ms_per_query": 701.3,
+      "n_queries": 252,
+      "n_chunks": 6169,
+      "mean_words": 64.0
+    },
+    "size128_overlap0": {
+      "recall@1": 0.369,
+      "recall@3": 0.496,
+      "recall@5": 0.5794,
+      "recall@10": 0.6468,
+      "mrr@10": 0.4532,
+      "ms_per_query": 1278.0,
+      "n_queries": 252,
+      "n_chunks": 1543,
+      "mean_words": 128.0
+    },
+    "size128_overlap32": {
+      "recall@1": 0.3929,
+      "recall@3": 0.5595,
+      "recall@5": 0.6151,
+      "recall@10": 0.6825,
+      "mrr@10": 0.4879,
+      "ms_per_query": 1268.3,
+      "n_queries": 252,
+      "n_chunks": 2057,
+      "mean_words": 128.0
+    }
+  },
+  "C_embedder": {}
+}
