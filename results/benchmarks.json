@@ -1,0 +1,97 @@
+{
+  "scratch-base": {
+    "mmlu": {
+      "acc": 0.206,
+      "acc_norm": 0.206,
+      "n": 500
+    },
+    "arc_easy": {
+      "acc": 0.28,
+      "acc_norm": 0.29,
+      "n": 500
+    },
+    "arc_challenge": {
+      "acc": 0.18,
+      "acc_norm": 0.196,
+      "n": 500
+    },
+    "hellaswag": {
+      "acc": 0.25,
+      "acc_norm": 0.26,
+      "n": 500
+    }
+  },
+  "scratch-sft": {
+    "mmlu": {
+      "acc": 0.222,
+      "acc_norm": 0.21,
+      "n": 500
+    },
+    "arc_easy": {
+      "acc": 0.3,
+      "acc_norm": 0.288,
+      "n": 500
+    },
+    "arc_challenge": {
+      "acc": 0.176,
+      "acc_norm": 0.21,
+      "n": 500
+    },
+    "hellaswag": {
+      "acc": 0.266,
+      "acc_norm": 0.264,
+      "n": 500
+    }
+  },
+  "scratch-dpo": {
+    "mmlu": {
+      "acc": 0.232,
+      "acc_norm": 0.22,
+      "n": 500
+    },
+    "arc_easy": {
+      "acc": 0.298,
+      "acc_norm": 0.302,
+      "n": 500
+    },
+    "arc_challenge": {
+      "acc": 0.174,
+      "acc_norm": 0.214,
+      "n": 500
+    },
+    "hellaswag": {
+      "acc": 0.266,
+      "acc_norm": 0.27,
+      "n": 500
+    }
+  },
+  "gpt2-124M": {
+    "mmlu": {
+      "acc": 0.232,
+      "acc_norm": 0.25,
+      "n": 500
+    },
+    "arc_easy": {
+      "acc": 0.422,
+      "acc_norm": 0.41,
+      "n": 500
+    },
+    "arc_challenge": {
+      "acc": 0.192,
+      "acc_norm": 0.192,
+      "n": 500
+    },
+    "hellaswag": {
+      "acc": 0.28,
+      "acc_norm": 0.306,
+      "n": 500
+    }
+  },
+  "qwen2.5-1.5B-4bit": {
+    "mmlu": {
+      "acc": 0.368,
+      "acc_norm": 0.386,
+      "n": 500
+    }
+  }
+}
