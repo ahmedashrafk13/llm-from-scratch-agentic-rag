@@ -2,7 +2,7 @@
 
 A decoder-only language model implemented, pre-trained, aligned and served from scratch, then used inside a retrieval-augmented agent. A QLoRA fine-tune of Qwen2.5-1.5B on the same data is included for comparison.
 
-> **Status: training in progress.** The code is complete. The result tables, loss curves and findings will be added from real runs. No numbers appear here until they have been measured.
+Trained weights: [ahmedashrafk12/llm-scratch-37m](https://huggingface.co/ahmedashrafk12/llm-scratch-37m) (`base/`, `sft/`, `dpo/`, `qlora/` adapter). Every number below was measured on a Colab T4 and is reproduced in [results/TABLES.md](results/TABLES.md).
 
 ## Why
 Most portfolios call an LLM API or fine-tune a downloaded model. This repo covers the layers underneath: how a Transformer is built, trained and aligned, and how retrieval changes its behaviour.
@@ -27,6 +27,75 @@ Most portfolios call an LLM API or fine-tune a downloaded model. This repo cover
 - QLoRA 1.5B vs the from-scratch 37M model on identical tasks.
 - RAG only vs fine-tune only vs RAG + fine-tune.
 - Ablations: chunk size and overlap, top-k, reranker on/off, retriever mode, embedder, and self-correction on/off.
+
+## Results
+
+### Pre-training
+37.4M parameters, 12,000 steps, 197M tokens, about 26.7k tokens/s on a T4.
+
+| validation set | loss | perplexity |
+|---|---|---|
+| TinyStories | 1.516 | 4.55 |
+| FineWeb | 4.128 | 62.1 |
+
+![Pre-training loss](results/pretrain_loss.png)
+
+The custom BPE tokenizer compresses TinyStories better than GPT-2 (4.17 vs 3.99 bytes/token) and FineWeb worse (3.71 vs 4.49). It was trained mostly on simple stories, so this is expected. Round-trip is exact on both.
+
+### Post-training
+| stage | measurement | result |
+|---|---|---|
+| SFT | val loss on SFT data (base → SFT) | 3.68 → 3.31 |
+| DPO | held-out preference accuracy (SFT reference → DPO) | 0.50 → 0.90, margin 2.30 |
+| Reward model | held-out pairwise accuracy after 3 epochs | 0.873 |
+
+### Zero-shot benchmarks (acc_norm, n=500 per task, chance = 0.25)
+| model | MMLU | ARC-Easy | ARC-Challenge | HellaSwag |
+|---|---|---|---|---|
+| scratch-base 37M | 0.206 | 0.290 | 0.196 | 0.260 |
+| scratch-SFT | 0.210 | 0.288 | 0.210 | 0.264 |
+| scratch-DPO | 0.220 | 0.302 | 0.214 | 0.270 |
+| GPT-2 124M | 0.250 | 0.410 | 0.192 | 0.306 |
+| Qwen2.5-1.5B (4-bit) | 0.386 | – | – | – |
+
+![Benchmarks](results/benchmarks.png)
+
+The 37M model sits at chance on MMLU, ARC-Challenge and HellaSwag, which is normal at this size and token budget. Its ARC-Easy score is above chance but below GPT-2, which saw about 50x more tokens. Only MMLU was run for Qwen.
+
+### Retrieval (252 queries)
+| retriever (chunk 128 / overlap 32) | Recall@1 | Recall@5 | MRR@10 | ms/query |
+|---|---|---|---|---|
+| dense (BGE-small) | 0.413 | 0.603 | 0.489 | 16 |
+| sparse (BM25) | **0.508** | 0.615 | **0.556** | 7 |
+| hybrid (RRF) | 0.484 | 0.635 | 0.550 | 21 |
+| hybrid + reranker | 0.393 | 0.615 | 0.488 | 1259 |
+
+- BM25 is the strongest single retriever on this corpus, because the questions reuse its exact wording.
+- The cross-encoder reranker **lowers** Recall@1 for every retriever and costs about 60x the latency.
+- Larger chunks help: 256 words with 32 overlap gives MRR 0.537, compared with 0.488 at 128 words and 0.482 at 64 words.
+- E5-small beats BGE-small for dense retrieval (MRR 0.552 vs 0.489).
+
+### Question answering (n=200)
+| system | exact match | contains gold |
+|---|---|---|
+| scratch-SFT, closed-book | 0.350 | 0.365 |
+| scratch-SFT + RAG | **0.380** | 0.395 |
+| scratch-DPO + RAG | 0.270 | 0.290 |
+| Qwen base, no RAG | 0.000 | 0.095 |
+| Qwen base + RAG | 0.000 | 0.205 |
+| Qwen QLoRA, no RAG | 0.000 | 0.480 |
+| Qwen QLoRA + RAG | 0.000 | **0.665** |
+
+Qwen answers in full sentences, so exact match is always 0. For Qwen, "contains gold" is the meaningful number. For this model, fine-tuning helped more than retrieval (0.095 → 0.480 vs 0.095 → 0.205), and the two combine (0.665).
+
+**Agent ablations (Qwen QLoRA + RAG):** top-k 1/3/5 gives contains-gold 0.585/0.665/0.670. Turning the reranker off scores slightly *higher* (0.680), which matches the retrieval ablation.
+
+**Hallucination (18 unanswerable + 40 answerable questions):** RAG lowers the overall hallucination rate (QLoRA 0.93 → 0.71). However, no configuration abstained on unanswerable questions except the one without self-correction (0.83 answered). The abstention behaviour does not work at this model size.
+
+### Known limitations
+- **Faithfulness scores are close to 0 for every system.** The offline NLI judge rates most answer claims as "neutral" relative to the retrieved chunks. Spot checks show two causes: the gold fact is often not in the top-3 chunks (context precision is 0.34), and the NLI model is strict on short or ungrammatical claims. Use these numbers for comparing systems against each other, not as absolute faithfulness.
+- The 37M model often loops or repeats itself on open-ended questions. Its QA scores come mostly from short yes/no answers.
+- Each benchmark task uses 500 samples, so differences under about 0.04 are within noise.
 
 ## Run it
 **On Colab (recommended):** open `colab_train.ipynb` on a T4 runtime and add `HF_TOKEN` as a Colab secret.

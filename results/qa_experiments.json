@@ -1,0 +1,313 @@
+{
+  "_n": 200,
+  "_index": {
+    "closed|scratch-base": [
+      "1_alignment_stages",
+      "scratch-base closed-book"
+    ],
+    "rag|scratch-base|k=3|rerank=True|selfcorrect=True|hybrid|ctx=150": [
+      "1_alignment_stages",
+      "scratch-base + RAG"
+    ],
+    "closed|scratch-sft": [
+      "1_alignment_stages",
+      "scratch-sft closed-book"
+    ],
+    "rag|scratch-sft|k=3|rerank=True|selfcorrect=True|hybrid|ctx=150": [
+      "1_alignment_stages",
+      "scratch-sft + RAG"
+    ],
+    "closed|scratch-dpo": [
+      "1_alignment_stages",
+      "scratch-dpo closed-book"
+    ],
+    "rag|scratch-dpo|k=3|rerank=True|selfcorrect=True|hybrid|ctx=150": [
+      "1_alignment_stages",
+      "scratch-dpo + RAG"
+    ],
+    "closed|qwen1.5b-base": [
+      "3_rag_vs_finetune",
+      "base (no RAG, no FT)"
+    ],
+    "rag|qwen1.5b-base|k=3|rerank=True|selfcorrect=True|hybrid|ctx=400": [
+      "3_rag_vs_finetune",
+      "RAG only (base + RAG)"
+    ],
+    "hall|qwen1.5b-base|norag": [
+      "5_hallucination",
+      "qwen base, no RAG"
+    ],
+    "hall|rag|qwen1.5b-base|k=3|rerank=True|selfcorrect=True|hybrid|ctx=400": [
+      "5_hallucination",
+      "qwen base + agentic RAG"
+    ],
+    "closed|qwen1.5b-qlora": [
+      "3_rag_vs_finetune",
+      "FT only (QLoRA, no RAG)"
+    ],
+    "rag|qwen1.5b-qlora|k=3|rerank=True|selfcorrect=True|hybrid|ctx=400": [
+      "3_rag_vs_finetune",
+      "RAG + FT (QLoRA + RAG)"
+    ],
+    "rag|qwen1.5b-qlora|k=1|rerank=True|selfcorrect=True|hybrid|ctx=400": [
+      "4_agent_ablations",
+      "top-k=1"
+    ],
+    "rag|qwen1.5b-qlora|k=5|rerank=True|selfcorrect=True|hybrid|ctx=400": [
+      "4_agent_ablations",
+      "top-k=5"
+    ],
+    "rag|qwen1.5b-qlora|k=3|rerank=False|selfcorrect=True|hybrid|ctx=400": [
+      "4_agent_ablations",
+      "top-k=3, no reranker"
+    ],
+    "rag|qwen1.5b-qlora|k=3|rerank=True|selfcorrect=False|hybrid|ctx=400": [
+      "4_agent_ablations",
+      "top-k=3, no self-correction"
+    ],
+    "hall|qwen1.5b-qlora|norag": [
+      "5_hallucination",
+      "qwen QLoRA, no RAG"
+    ],
+    "hall|rag|qwen1.5b-qlora|k=3|rerank=True|selfcorrect=True|hybrid|ctx=400": [
+      "5_hallucination",
+      "qwen QLoRA + agentic RAG"
+    ],
+    "hall|rag|qwen1.5b-qlora|k=3|rerank=True|selfcorrect=False|hybrid|ctx=400": [
+      "5_hallucination",
+      "qwen QLoRA + RAG, no self-correction"
+    ]
+  },
+  "_judge_version": 2,
+  "1_alignment_stages": {
+    "scratch-base closed-book": {
+      "exact_match": 0.0,
+      "token_f1": 0.0073,
+      "contains_gold": 0.005,
+      "n": 200
+    },
+    "scratch-base + RAG": {
+      "exact_match": 0.0,
+      "token_f1": 0.0089,
+      "contains_gold": 0.03,
+      "n": 200,
+      "faithfulness": 0.0,
+      "answer_relevancy": 0.5224,
+      "context_precision": 0.3417,
+      "abstain_rate": 0.0,
+      "self_correct_rate": 0.04,
+      "s_per_q": 1.6
+    },
+    "scratch-sft closed-book": {
+      "exact_match": 0.35,
+      "token_f1": 0.3643,
+      "contains_gold": 0.365,
+      "n": 200
+    },
+    "scratch-sft + RAG": {
+      "exact_match": 0.38,
+      "token_f1": 0.3961,
+      "contains_gold": 0.395,
+      "n": 200,
+      "faithfulness": 0.01,
+      "answer_relevancy": 0.4929,
+      "context_precision": 0.3417,
+      "abstain_rate": 0.0,
+      "self_correct_rate": 0.04,
+      "s_per_q": 0.82
+    },
+    "scratch-dpo closed-book": {
+      "exact_match": 0.365,
+      "token_f1": 0.3844,
+      "contains_gold": 0.37,
+      "n": 200
+    },
+    "scratch-dpo + RAG": {
+      "exact_match": 0.27,
+      "token_f1": 0.2839,
+      "contains_gold": 0.29,
+      "n": 200,
+      "faithfulness": 0.015,
+      "answer_relevancy": 0.4675,
+      "context_precision": 0.3417,
+      "abstain_rate": 0.0,
+      "self_correct_rate": 0.04,
+      "s_per_q": 0.77
+    }
+  },
+  "3_rag_vs_finetune": {
+    "base (no RAG, no FT)": {
+      "exact_match": 0.0,
+      "token_f1": 0.0248,
+      "contains_gold": 0.095,
+      "n": 200
+    },
+    "RAG only (base + RAG)": {
+      "exact_match": 0.0,
+      "token_f1": 0.0679,
+      "contains_gold": 0.205,
+      "n": 200,
+      "faithfulness": 0.0042,
+      "answer_relevancy": 0.6224,
+      "context_precision": 0.3417,
+      "abstain_rate": 0.0,
+      "self_correct_rate": 0.04,
+      "s_per_q": 3.44
+    },
+    "FT only (QLoRA, no RAG)": {
+      "exact_match": 0.0,
+      "token_f1": 0.0462,
+      "contains_gold": 0.48,
+      "n": 200
+    },
+    "RAG + FT (QLoRA + RAG)": {
+      "exact_match": 0.0,
+      "token_f1": 0.0977,
+      "contains_gold": 0.665,
+      "n": 200,
+      "faithfulness": 0.0054,
+      "answer_relevancy": 0.5673,
+      "context_precision": 0.3417,
+      "abstain_rate": 0.0,
+      "self_correct_rate": 0.04,
+      "s_per_q": 7.9
+    }
+  },
+  "5_hallucination": {
+    "qwen base, no RAG": {
+      "hallucination_rate": 1.0,
+      "unanswerable_answered_rate": 1.0,
+      "answerable_unsupported_wrong_rate": 1.0,
+      "n_unanswerable": 18,
+      "n_answerable": 40
+    },
+    "qwen base + agentic RAG": {
+      "hallucination_rate": 0.8103,
+      "unanswerable_answered_rate": 1.0,
+      "answerable_unsupported_wrong_rate": 0.725,
+      "n_unanswerable": 18,
+      "n_answerable": 40
+    },
+    "qwen QLoRA, no RAG": {
+      "hallucination_rate": 0.931,
+      "unanswerable_answered_rate": 1.0,
+      "answerable_unsupported_wrong_rate": 0.9,
+      "n_unanswerable": 18,
+      "n_answerable": 40
+    },
+    "qwen QLoRA + agentic RAG": {
+      "hallucination_rate": 0.7069,
+      "unanswerable_answered_rate": 1.0,
+      "answerable_unsupported_wrong_rate": 0.575,
+      "n_unanswerable": 18,
+      "n_answerable": 40
+    },
+    "qwen QLoRA + RAG, no self-correction": {
+      "hallucination_rate": 0.6207,
+      "unanswerable_answered_rate": 0.8333,
+      "answerable_unsupported_wrong_rate": 0.525,
+      "n_unanswerable": 18,
+      "n_answerable": 40
+    }
+  },
+  "2_scale": {
+    "scratch-dpo 37M closed-book": {
+      "exact_match": 0.365,
+      "token_f1": 0.3844,
+      "contains_gold": 0.37,
+      "n": 200
+    },
+    "scratch-dpo 37M + RAG": {
+      "exact_match": 0.27,
+      "token_f1": 0.2839,
+      "contains_gold": 0.29,
+      "n": 200,
+      "faithfulness": 0.015,
+      "answer_relevancy": 0.4675,
+      "context_precision": 0.3417,
+      "abstain_rate": 0.0,
+      "self_correct_rate": 0.04,
+      "s_per_q": 0.77
+    },
+    "qwen-qlora 1.5B closed-book": {
+      "exact_match": 0.0,
+      "token_f1": 0.0462,
+      "contains_gold": 0.48,
+      "n": 200
+    },
+    "qwen-qlora 1.5B + RAG": {
+      "exact_match": 0.0,
+      "token_f1": 0.0977,
+      "contains_gold": 0.665,
+      "n": 200,
+      "faithfulness": 0.0054,
+      "answer_relevancy": 0.5673,
+      "context_precision": 0.3417,
+      "abstain_rate": 0.0,
+      "self_correct_rate": 0.04,
+      "s_per_q": 7.9
+    }
+  },
+  "4_agent_ablations": {
+    "top-k=1": {
+      "exact_match": 0.0,
+      "token_f1": 0.0925,
+      "contains_gold": 0.585,
+      "n": 200,
+      "faithfulness": 0.0477,
+      "answer_relevancy": 0.5668,
+      "context_precision": 0.31,
+      "abstain_rate": 0.0,
+      "self_correct_rate": 0.04,
+      "s_per_q": 7.66
+    },
+    "top-k=3": {
+      "exact_match": 0.0,
+      "token_f1": 0.0977,
+      "contains_gold": 0.665,
+      "n": 200,
+      "faithfulness": 0.0054,
+      "answer_relevancy": 0.5673,
+      "context_precision": 0.3417,
+      "abstain_rate": 0.0,
+      "self_correct_rate": 0.04,
+      "s_per_q": 7.9
+    },
+    "top-k=5": {
+      "exact_match": 0.0,
+      "token_f1": 0.0897,
+      "contains_gold": 0.67,
+      "n": 200,
+      "faithfulness": 0.0025,
+      "answer_relevancy": 0.5591,
+      "context_precision": 0.3428,
+      "abstain_rate": 0.0,
+      "self_correct_rate": 0.04,
+      "s_per_q": 7.74
+    },
+    "top-k=3, no reranker": {
+      "exact_match": 0.0,
+      "token_f1": 0.0962,
+      "contains_gold": 0.68,
+      "n": 200,
+      "faithfulness": 0.0167,
+      "answer_relevancy": 0.5713,
+      "context_precision": 0.3975,
+      "abstain_rate": 0.0,
+      "self_correct_rate": 0.0,
+      "s_per_q": 7.23
+    },
+    "top-k=3, no self-correction": {
+      "exact_match": 0.0,
+      "token_f1": 0.097,
+      "contains_gold": 0.665,
+      "n": 200,
+      "faithfulness": 0.0056,
+      "answer_relevancy": 0.5676,
+      "context_precision": 0.3458,
+      "abstain_rate": 0.04,
+      "self_correct_rate": 0.0,
+      "s_per_q": 7.39
+    }
+  }
+}
