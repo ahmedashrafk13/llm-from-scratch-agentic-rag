@@ -22,10 +22,10 @@ def load(name):
 def md_table(rows: list[dict], first: str) -> str:
     if not rows:
         return ""
-    cols = list(rows[0])
+    cols = list(dict.fromkeys(c for r in rows for c in r))
     out = ["| " + " | ".join(cols) + " |", "|" + "---|" * len(cols)]
     for r in rows:
-        out.append("| " + " | ".join(f"{r[c]:.3f}" if isinstance(r[c], float) else str(r[c]) for c in cols) + " |")
+        out.append("| " + " | ".join(f"{r[c]:.3f}" if isinstance(r.get(c), float) else str(r.get(c, "-")) for c in cols) + " |")
     return "\n".join(out)
 
 
@@ -51,9 +51,19 @@ def loss_curves():
     fig.savefig(R / "pretrain_loss.png", dpi=130)
 
 
+def bench_tasks(b):
+    if isinstance(b.get("_chance"), dict):
+        return list(b["_chance"])
+    tasks = []
+    for m, v in b.items():
+        if not m.startswith("_") and isinstance(v, dict):
+            tasks += [t for t, r in v.items() if isinstance(r, dict) and "acc_norm" in r and t not in tasks]
+    return tasks
+
+
 def bench_chart(b):
-    models = [m for m in b if not m.startswith("_")]
-    tasks = list(b["_chance"])
+    models = [m for m in b if not m.startswith("_") and isinstance(b[m], dict)]
+    tasks = bench_tasks(b)
     fig, ax = plt.subplots(figsize=(10, 4))
     w = 0.8 / len(models)
     for i, m in enumerate(models):
@@ -76,8 +86,8 @@ def main():
                md_table([{"split": k, **v} for k, v in t["heldout"].items()], "split")]
     if b := load("benchmarks.json"):
         bench_chart(b)
-        rows = [{"model": m, **{t: b[m][t]["acc_norm"] for t in b["_chance"] if t in b[m]}}
-                for m in b if not m.startswith("_")]
+        rows = [{"model": m, **{t: b[m][t]["acc_norm"] for t in bench_tasks(b) if t in b[m]}}
+                for m in b if not m.startswith("_") and isinstance(b[m], dict)]
         md += ["## Benchmarks (acc_norm, n=500 per task, chance = 0.25)", md_table(rows, "model")]
     if r := load("retrieval_ablation.json"):
         for sec, title in (("A_mode_x_rerank", "Retriever x reranker (chunk 128/32)"),
