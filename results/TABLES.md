@@ -58,49 +58,49 @@
 | system | exact_match | token_f1 | contains_gold | n | faithfulness | answer_relevancy | context_precision | abstain_rate | self_correct_rate | s_per_q |
 |---|---|---|---|---|---|---|---|---|---|---|
 | scratch-base closed-book | 0.000 | 0.007 | 0.005 | 200 | - | - | - | - | - | - |
-| scratch-base + RAG | 0.000 | 0.009 | 0.030 | 200 | 0.000 | 0.522 | 0.342 | 0.000 | 0.040 | 1.600 |
+| scratch-base + RAG | 0.000 | 0.009 | 0.030 | 200 | 0.158 | 0.522 | 0.342 | 0.000 | 0.040 | 1.890 |
 | scratch-sft closed-book | 0.350 | 0.364 | 0.365 | 200 | - | - | - | - | - | - |
-| scratch-sft + RAG | 0.380 | 0.396 | 0.395 | 200 | 0.010 | 0.493 | 0.342 | 0.000 | 0.040 | 0.820 |
+| scratch-sft + RAG | 0.380 | 0.396 | 0.395 | 200 | 0.380 | 0.493 | 0.342 | 0.000 | 0.040 | 0.800 |
 | scratch-dpo closed-book | 0.365 | 0.384 | 0.370 | 200 | - | - | - | - | - | - |
-| scratch-dpo + RAG | 0.270 | 0.284 | 0.290 | 200 | 0.015 | 0.468 | 0.342 | 0.000 | 0.040 | 0.770 |
+| scratch-dpo + RAG | 0.270 | 0.284 | 0.290 | 200 | 0.307 | 0.468 | 0.342 | 0.000 | 0.040 | 0.750 |
 
 ## QA: 2_scale
 
 | system | exact_match | token_f1 | contains_gold | n | faithfulness | answer_relevancy | context_precision | abstain_rate | self_correct_rate | s_per_q |
 |---|---|---|---|---|---|---|---|---|---|---|
 | scratch-dpo 37M closed-book | 0.365 | 0.384 | 0.370 | 200 | - | - | - | - | - | - |
-| scratch-dpo 37M + RAG | 0.270 | 0.284 | 0.290 | 200 | 0.015 | 0.468 | 0.342 | 0.000 | 0.040 | 0.770 |
+| scratch-dpo 37M + RAG | 0.270 | 0.284 | 0.290 | 200 | 0.307 | 0.468 | 0.342 | 0.000 | 0.040 | 0.750 |
 | qwen-qlora 1.5B closed-book | 0.000 | 0.046 | 0.480 | 200 | - | - | - | - | - | - |
-| qwen-qlora 1.5B + RAG | 0.000 | 0.098 | 0.665 | 200 | 0.005 | 0.567 | 0.342 | 0.000 | 0.040 | 7.900 |
+| qwen-qlora 1.5B + RAG | 0.000 | 0.098 | 0.665 | 200 | 0.501 | 0.567 | 0.342 | 0.000 | 0.040 | 8.050 |
 
 ## QA: 3_rag_vs_finetune
 
 | system | exact_match | token_f1 | contains_gold | n | faithfulness | answer_relevancy | context_precision | abstain_rate | self_correct_rate | s_per_q |
 |---|---|---|---|---|---|---|---|---|---|---|
 | base (no RAG, no FT) | 0.000 | 0.025 | 0.095 | 200 | - | - | - | - | - | - |
-| RAG only (base + RAG) | 0.000 | 0.068 | 0.205 | 200 | 0.004 | 0.622 | 0.342 | 0.000 | 0.040 | 3.440 |
+| RAG only (base + RAG) | 0.000 | 0.068 | 0.205 | 200 | 0.395 | 0.622 | 0.342 | 0.000 | 0.040 | 3.470 |
 | FT only (QLoRA, no RAG) | 0.000 | 0.046 | 0.480 | 200 | - | - | - | - | - | - |
-| RAG + FT (QLoRA + RAG) | 0.000 | 0.098 | 0.665 | 200 | 0.005 | 0.567 | 0.342 | 0.000 | 0.040 | 7.900 |
+| RAG + FT (QLoRA + RAG) | 0.000 | 0.098 | 0.665 | 200 | 0.501 | 0.567 | 0.342 | 0.000 | 0.040 | 8.050 |
 
 ## QA: 4_agent_ablations
 
 | system | exact_match | token_f1 | contains_gold | n | faithfulness | answer_relevancy | context_precision | abstain_rate | self_correct_rate | s_per_q |
 |---|---|---|---|---|---|---|---|---|---|---|
-| top-k=1 | 0.000 | 0.092 | 0.585 | 200 | 0.048 | 0.567 | 0.310 | 0.000 | 0.040 | 7.660 |
-| top-k=3 | 0.000 | 0.098 | 0.665 | 200 | 0.005 | 0.567 | 0.342 | 0.000 | 0.040 | 7.900 |
-| top-k=5 | 0.000 | 0.090 | 0.670 | 200 | 0.003 | 0.559 | 0.343 | 0.000 | 0.040 | 7.740 |
-| top-k=3, no reranker | 0.000 | 0.096 | 0.680 | 200 | 0.017 | 0.571 | 0.398 | 0.000 | 0.000 | 7.230 |
-| top-k=3, no self-correction | 0.000 | 0.097 | 0.665 | 200 | 0.006 | 0.568 | 0.346 | 0.040 | 0.000 | 7.390 |
+| top-k=1 | 0.000 | 0.092 | 0.585 | 200 | 0.351 | 0.567 | 0.310 | 0.000 | 0.040 | 7.640 |
+| top-k=3 | 0.000 | 0.098 | 0.665 | 200 | 0.501 | 0.567 | 0.342 | 0.000 | 0.040 | 8.050 |
+| top-k=5 | 0.000 | 0.090 | 0.670 | 200 | 0.577 | 0.559 | 0.343 | 0.000 | 0.040 | 8.020 |
+| top-k=3, no reranker | 0.000 | 0.096 | 0.680 | 200 | 0.518 | 0.571 | 0.398 | 0.000 | 0.000 | 7.550 |
+| top-k=3, no self-correction | 0.000 | 0.097 | 0.665 | 200 | 0.503 | 0.568 | 0.346 | 0.040 | 0.000 | 7.510 |
 
 ## QA: 5_hallucination
 
 | system | hallucination_rate | unanswerable_answered_rate | answerable_unsupported_wrong_rate | n_unanswerable | n_answerable |
 |---|---|---|---|---|---|
 | qwen base, no RAG | 1.000 | 1.000 | 1.000 | 18 | 40 |
-| qwen base + agentic RAG | 0.810 | 1.000 | 0.725 | 18 | 40 |
+| qwen base + agentic RAG | 0.569 | 1.000 | 0.375 | 18 | 40 |
 | qwen QLoRA, no RAG | 0.931 | 1.000 | 0.900 | 18 | 40 |
-| qwen QLoRA + agentic RAG | 0.707 | 1.000 | 0.575 | 18 | 40 |
-| qwen QLoRA + RAG, no self-correction | 0.621 | 0.833 | 0.525 | 18 | 40 |
+| qwen QLoRA + agentic RAG | 0.431 | 1.000 | 0.175 | 18 | 40 |
+| qwen QLoRA + RAG, no self-correction | 0.345 | 0.833 | 0.125 | 18 | 40 |
 
 ## Reward model history
 

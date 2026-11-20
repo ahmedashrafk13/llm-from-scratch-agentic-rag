@@ -92,8 +92,10 @@ Qwen answers in full sentences, so exact match is always 0. For Qwen, "contains 
 
 **Hallucination (18 unanswerable + 40 answerable questions):** RAG lowers the overall hallucination rate (QLoRA 0.93 → 0.71). However, no configuration abstained on unanswerable questions except the one without self-correction (0.83 answered). The abstention behaviour does not work at this model size.
 
+**Faithfulness (offline NLI judge, v3):** the best score is Qwen QLoRA + RAG with top-k=5 (0.58). The default top-k=3 setup scores 0.50, against 0.40 for base Qwen + RAG. The 37M models score 0.38 (SFT) and 0.31 (DPO). The 37M base model scores 0.16 because it mostly produces text that is not grounded in the chunks. The judge splits each answer into claims and checks every claim against 3-sentence windows of each retrieved chunk. An earlier version compared short claims with whole chunks and scored almost every system near 0. That version was replaced.
+
 ### Known limitations
-- **Faithfulness scores are close to 0 for every system.** The offline NLI judge rates most answer claims as "neutral" relative to the retrieved chunks. Spot checks show two causes: the gold fact is often not in the top-3 chunks (context precision is 0.34), and the NLI model is strict on short or ungrammatical claims. Use these numbers for comparing systems against each other, not as absolute faithfulness.
+- **Faithfulness is limited by retrieval.** Context precision is only about 0.34, so the gold fact is often missing from the retrieved chunks. In those cases the model cannot give a grounded answer. Better retrieval would raise faithfulness more than further changes to the generator. These numbers come from a local NLI judge, not an API LLM judge, so treat them as relative comparisons between systems.
 - The 37M model often loops or repeats itself on open-ended questions. Its QA scores come mostly from short yes/no answers.
 - Each benchmark task uses 500 samples, so differences under about 0.04 are within noise.
 
